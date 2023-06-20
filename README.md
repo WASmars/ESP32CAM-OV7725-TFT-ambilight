@@ -16,7 +16,7 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
 - receive my IR remote of ceilling light for activate the movie mode
 - RF433 remote control for controlling my RF controlled AC socket connecting to IKEA led strip powering
   - the RC-remote arduino library is not fit my AC socket controller, there need a variable light contorl available library, is the @1technophile/NewRemoteSwitch
-- AEC, AWB is manual setting for my environment
+- AEC, AWB is manual setting for consist color during difference scenes, but the HDR video still has chances got too blueish or less color
 
 
 currently depend on my TV set, the image location can only be defined by self calculating on excel, my TV set is 65inch, and 15 cm height and 20cm away from the camera.  
@@ -41,7 +41,7 @@ with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 24
     NewRemoteSwitch-master
     bodmer/TFT_eSPI@^2.5.23
 
-## connection of the project
+## Wiring of the project
 
 ![image](https://github.com/WASmars/the_project/assets/54877239/a41b12f6-0b1a-4ae0-b5e5-bd952424c0dc)
 
