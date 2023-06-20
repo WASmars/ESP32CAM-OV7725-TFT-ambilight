@@ -45,15 +45,20 @@ with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 24
 
 ![image](https://github.com/WASmars/the_project/assets/54877239/a41b12f6-0b1a-4ae0-b5e5-bd952424c0dc)
 
+|ESP32CAM pin| wiring to/from |
+|-----------|-------------|
+| 5V        |from POWER 5V|
+| GND       |from POWER GND|
+| GPIO12    |to 433MHZ RF TX DATA |
+| GPIO13    |to TFT MOSI|
+| GPIO15    |to level shift for WS2815 LED DATA |
+| GPIO14    |to TFT SCK|
+| GPIO2     |to TFT DC|
+| GPIO4     |to IR REMOTE RX INPUT|
+| GPIO16    | *PSRAM #CS pin used*|
+| GPIO0	    | *CAMERA used*|
 
-- 5V        ,from POWER 5V
-- GND       ,from POWER GND
-- GPIO12    ,to 433MHZ RF TX DATA 
-- GPIO13    ,to TFT MOSI
-- GPIO15    ,to level shift for WS2815 LED DATA 
-- GPIO14    ,to TFT SCK
-- GPIO2     ,to TFT DC
-- GPIO4     ,to IR REMOTE RX INPUT
+
 - GPIO 0 is for the camera MCLK generation, connected to camera, ***which is not suitable for other application once you use camera***
 - GPIO16 is used for CS# of the PSRAM, ***which is not suitable for other application once you use camera***
 - GPIO 1, 3 used for UART communication with PC
@@ -92,15 +97,17 @@ You can download a PDF file with better resolution on [this GitHub repository](h
 ### TFT LCD 2.2inch, 320x240 pixels ili9341 driver
 
 ![image](https://github.com/WASmars/the_project/assets/54877239/244867a5-7cef-4f7b-bdfd-f4b7b1e8acc2)
-- PIN1	,VCC    ,TO ESP32 3.3V
-- PIN2	,GND    ,TO ESP32 GND
-- PIN3	,CS     ,TO ESP32 GND
-- PIN4	,RESET  ,TO ESP32 RST
-- PIN5	,DC/RS  ,TO ESP32 GPIO2
-- PIN6	,MOSI   ,TO ESP32 GPIO13
-- PIN7	,SCK    ,TO ESP32 GPIO14
-- PIN8	,BLK    ,TO ESP32 3.3V
-- PIN9	,MISO   , LEAVE OPEN
+| TFT pin| def | wiring to/from|
+|-------|--------|-------------|
+| PIN1	| VCC    | TO ESP32 3.3V| 
+| PIN2	| GND    | TO ESP32 GND| 
+| PIN3	| CS    | TO ESP32 GND| 
+| PIN4	| RESET  | TO ESP32 RST| 
+| PIN5	| DC/RS  | TO ESP32 GPIO2| 
+| PIN6	| MOSI   | TO ESP32 GPIO13| 
+| PIN7	| SCK    | TO ESP32 GPIO14| 
+| PIN8	| BLK    | TO ESP32 3.3V| 
+| PIN9	| MISO   |  LEAVE OPEN| 
 
 can download a related documentation on [this site](http://www.lcdwiki.com/2.2inch_SPI_Module_ILI9341_SKU:MSP2202)  
 
