@@ -122,8 +122,11 @@ static const uint8_t default_regs[][2] = {
     {MTX_CTRL,      0x1E},
     //sign bit
     {SIGN_BIT,      0x06}, //default 0x06 brightness 0x0E
-    {BRIGHTNESS,    0x38}, //0x08 
-    {CONTRAST,      0x40}, //0x30
+    {BRIGHTNESS,    0x18}, //0x08 +0, 0x38 Brightness +3
+    {CONTRAST,      0x20}, //0x30 original
+    //saturation 
+    {USAT,          0x50}, //0x40 +0, 0x60 Saturation + 2
+    {VSAT,          0x50}, //0x40 +0, 0x60 Saturation + 2
     {UVADJ0,        0x81},
     {SDE,           (SDE_CONT_BRIGHT_EN | SDE_SATURATION_EN)},
 
@@ -292,7 +295,7 @@ static int set_framesize(sensor_t *sensor, framesize_t framesize)
 
         ret |= SCCB_Write(sensor->slv_addr, COM7, reg | COM7_RES_QVGA);
 
-        ret |= SCCB_Write(sensor->slv_addr, CLKRC, 0x80 | 0x00); // 0x80 | 0x01, divide the clock to half, 0x00 no divide
+        ret |= SCCB_Write(sensor->slv_addr, CLKRC, 0x80 | 0x00); //  0x01, divide the clock to half=> 15fps , 0x00 no divide => 30fps
 
     } else {
         // Disable auto-scaling/zooming factors
