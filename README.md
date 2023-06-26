@@ -15,7 +15,7 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
     - image process and pushing WS2815 data by ESP32 core 0
 - receive my IR remote of ceilling light for activate the movie mode
 - RF433 remote control for controlling my RF controlled AC socket connecting to IKEA led strip powering
-  - the RC-remote arduino library is not fit my AC socket controller, there need a variable light contorl available library, is the @1technophile/NewRemoteSwitch
+  - the @sui77/rc-switch arduino library is not fit my AC socket controller, there need a variable light contorl available library, is the @1technophile/NewRemoteSwitch
 - AEC, AWB is manual setting for consist color during difference scenes, but the HDR video still has chances got too blueish or less color
 
 
