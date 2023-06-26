@@ -20,7 +20,7 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
 
 
 currently depend on my TV set, the image location can only be defined by self calculating on excel, my TV set is 65inch, and 15 cm height and 20cm away from the camera.  
-I turned off the AEC and AWB for the low light environment of my movie, gaming senario, however there still has color shift in the result, but can modify by the gamma calculation of the esp32 built in image process function  
+I turned off the AEC and AWB for the low light environment of my movie, gaming senario, however there still has color shift in the result, but can modify with the esp32 built in image process function *gamma calculation*
 with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 248 LEDs by 50 LEDs/meter LED strip, 12V power require ~40W [WLED calculator](https://wled-calculator.github.io/)
 
 
@@ -63,7 +63,7 @@ with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 24
 - GPIO16 is used for CS# of the PSRAM, ***which is not suitable for other application once you use camera***
 - GPIO 1, 3 used for UART communication with PC
 - original GND near the flash is ***modified as RST pin in the clone ESP32-cam board*** wihcih is useful for pin release
-- ****remove the R13(in reference schematic) 1k resistor or flash to remove the light****
+- ***remove the R13(in reference schematic) 1k resistor or flash to stop the light***, flash light is not requried for the application
 
 ## Actual performance of the ambilight
 ### calibrating the strip location from the image  
