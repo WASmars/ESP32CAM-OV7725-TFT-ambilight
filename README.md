@@ -10,7 +10,7 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
 ## Key functions of the projects
 
 - FPS around 30FPS
-    - with RGB565, QVGA setting, when there turned off the image push to TFT, only 15fps while push picture to TFT.
+    - with RGB565, QVGA setting, pause pushing image to TFT, roughly 15fps while push picture to TFT.
     - main loop of taking photo on ESP32 core 1
     - image process and pushing WS2815 data by ESP32 core 0
 - receive my IR remote of ceilling light for activate the movie mode
