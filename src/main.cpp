@@ -56,15 +56,34 @@ only
 #ifndef portTICK_RATE_MS
 #define portTICK_RATE_MS portTICK_PERIOD_MS
 #endif
-
+#include <driver/rtc_io.h>
+#include "esp_sleep.h"
 #include "esp_camera.h"
 #include "sensor.h"
 #include "strip_index.h"
 #define CONFIG_CAMERA_CORE1 1
+//#define CONFIG_CAMERA_CORE0 1
 TaskHandle_t Task1;
-//************ declare led info
-//#define LED_BUILTIN 33
-#define LED_PIN 15 //33, using CS 15 when ili9341
+TaskHandle_t Task2;
+
+//** declare led strip data pin 
+#define LED_PIN 15 // no #CS(GPIO15) required when using ili9341
+
+#define NUM_LEDS 259
+#define STRIP_WIDTH 84
+#define STRIP_HEIGHT 45
+
+#define CHIPSET WS2812
+#define COLOR_ORDER RGB
+bool Process = true;
+uint32_t lastimage = millis();
+uint32_t temp_time;
+uint32_t LED_T0;
+CRGB leds[NUM_LEDS]; // arry for store the RGB data for strip
+CRGB LED_GAMMA_TEMP;
+// minimun light when start the camera 30,20,16
+CRGB min_bright=CRGB(30,20,16);
+// temp file for calculation
 struct pixel{
     uint16_t R_TEMP;
     uint16_t G_TEMP;
@@ -72,6 +91,17 @@ struct pixel{
     uint16_t pix_TEMP;
     //uint8_t count;
 } pixel_temp={0,0,0,0};
+
+// max brightness setting from FastLED
+#define BRIGHTNESS 235
+
+// capture = 1 start return frame buffer and enable recording, =0 stop return frame buffer
+bool CAPTURE=1;
+
+//* declare the tft backlight, but there has no pin, issue to solve
+#define TFT_BKL 33
+
+TFT_eSPI tft = TFT_eSPI();
 #define QVGA
 #ifdef QQVGA
     #define IMG_WIDTH 160
@@ -79,58 +109,35 @@ struct pixel{
     
 #elif defined(QVGA)
     #define IMG_WIDTH 320
-    #define IMG_HEIGHT 120
+    #define IMG_HEIGHT 120 // only halft of image stored , not enough ram for process
 #endif
+// only halft of image stored 
 uint16_t Buffer[IMG_WIDTH*IMG_HEIGHT];
-
-#define NUM_LEDS    259
-#define STRIP_WIDTH 84
-#define STRIP_HEIGHT 45
-
-#define CHIPSET WS2812
-#define COLOR_ORDER RGB
-CRGB leds[NUM_LEDS];
-CRGB LED_GAMMA_TEMP;
-CRGB min_bright=CRGB(30,22,18);
-#define BRIGHTNESS 220
-uint8_t BRIGHT_WEIGHT = 1;
-
-
-bool CAPTURE=1;
-//************ declare the tft related info
-#define TFT_BKL 33
-//#define TFT_RGB_ORDER TFT_MAD_RGB
-
-TFT_eSPI tft = TFT_eSPI();
-
 
 
 //************ declare RF and ir related info
-#if defined ESP8266 || defined ESP32
+//**********************************************
 // Create a transmitter on address 5977494, using a digital pin to transmit, 
 // with a period duration of 260ms (default), repeating the transmitted
 // code 2^2=4 times.
-//NewRemoteTransmitter transmitter(5977494, 40, 260, 2);
-//NewRemoteTransmitter transmitter(5977494, 3, 260, 2); // pin 40, GPIO3 for transmitt
+NewRemoteTransmitter transmitter(5977494, 12, 260, 2); // GPIO12 for transmitt
 
-NewRemoteTransmitter transmitter(5977494, 12, 260, 2); // pin25 GPIO16 for ir receive
-#else
-NewRemoteTransmitter transmitter(5977494, 11, 260, 2);
-#endif
-// An IR detector/demodulator is connected to GPIO pin 1
+// An IR detector/demodulator is connected to GPIO pin 4
 // Note: GPIO 16 won't work on the ESP8266 as it does not have interrupts.
 #define IR_USE
-//const uint16_t kRecvPin =1; // pin41 GPIO1 for ir receive
-const uint16_t kRecvPin =4; // pin 24, GPIO4 for transmitt
+const uint16_t kRecvPin = 4; // GPIO4 for transmitt
 #if defined IR_USE
 IRrecv irrecv(kRecvPin);
-decode_results results;
 bool NEO_FLAG=0;
 uint8_t NEO_TYPE=0; //* change the lighting method, with
 #else
 bool NEO_FLAG=0;
 uint8_t NEO_TYPE=1; //* change the lighting method, with
 #endif
+
+RTC_DATA_ATTR bool sleep_status=0;
+
+
 
 
 //#define BOARD_WROVER_KIT 1
@@ -182,41 +189,43 @@ uint8_t NEO_TYPE=1; //* change the lighting method, with
 #endif
 
 static const char *TAG = "example:take_picture";
-
-/*void Task1code(void * pvParameters){
+// testing code before updating the strip controll script
+/*void Task1code(void * pvParameters){ 
     delay(2000);
     while(1){
 }
 }*/
-void Task1code(void * pvParameters){
+
+// LED strip controll code
+/*void Task1code(void * pvParameters){
     delay(2000);
-    #if not defined IR_USE
+    //#if not defined IR_USE
     Serial.print("Task1 running on core ");
     Serial.println(xPortGetCoreID());
-    #endif
+    //#endif
     uint16_t offset = 0;
+    uint32_t last_t0;
     // led ambilight
     while(1){
         if((NEO_TYPE&0b00000011) ==1){
             // **********  the strip led data
-            uint32_t last_t0 = millis();
+            last_t0 = millis();
             //##########################################################################
             // grab right line of led and avg       
             for (int i = 0; i<STRIP_HEIGHT; i++){
-                //  for (int i=0; i<(240-height_mod[0]); i+=3){
-                uint8_t count=0;
+
+
                 pixel_temp={0,0,0,0};
 
-                //data_temp = 0;
+                //** along strip direction 2 samples
                 for (int j =0; j<2; j++){
+                    //** toward center 4 samples
                     for (int k=0;k<4;k++){
-                        count++;
-                        // location start at 0, 105
-                        // 160*105 = 16800
                         #if defined IR_USE
                         //pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[right_buf[i]-j*IMG_WIDTH+k*9] : 0 ;
                         pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[right_buf[i]-right_off[i]*k] : 0 ;
                         if (NEO_FLAG && i <= 20){
+                            //** try to draw on TFT but failed, not yet clear on why failed
                             //tft.drawPixel((right_buf[i]-j*IMG_WIDTH+k*3)%TFT_WIDTH, (right_buf[i]-j*IMG_WIDTH+k*3)/TFT_WIDTH, TFT_DARKCYAN);
                         }
                         #else
@@ -245,8 +254,7 @@ void Task1code(void * pvParameters){
                     }
 
                 }
-                //delay(1000);
-                //leds[i+1].setRGB( pixel_temp.R_TEMP/count, pixel_temp.G_TEMP/count, pixel_temp.B_TEMP/count);
+
                 //pixel_temp.R_TEMP = dim8_video((pixel_temp.R_TEMP>>2));
                 //pixel_temp.G_TEMP = dim8_video((pixel_temp.G_TEMP>>2));
                 //pixel_temp.B_TEMP = dim8_video((pixel_temp.B_TEMP>>2));
@@ -256,33 +264,25 @@ void Task1code(void * pvParameters){
                 LED_GAMMA_TEMP.b = (pixel_temp.B_TEMP>>2);
 
                 LED_GAMMA_TEMP = applyGamma_video(LED_GAMMA_TEMP, 2, 2, 2);
-                //for (int x=0; x< BRIGHT_WEIGHT; x++){
-                //    LED_GAMMA_TEMP.r = brighten8_raw(LED_GAMMA_TEMP.r);
-                //    LED_GAMMA_TEMP.g = brighten8_raw(LED_GAMMA_TEMP.g);
-                //    LED_GAMMA_TEMP.b = brighten8_raw(LED_GAMMA_TEMP.b);
-                //}
-                // start from right
-                offset = i;
                 
-                //tft.drawPixel(right_buf[offset]%320, right_buf[offset]/320,TFT_MAGENTA);
-                //leds[i].setRGB( (pixel_temp.R_TEMP>>1) + (leds[i].r>>1),
-                // (pixel_temp.G_TEMP>>1) + (leds[i].g>>1), 
-                // (pixel_temp.B_TEMP>>1) + (leds[i].b>>1)
-                // );
+                //** start from right i+0
+                offset = i;
                 leds[offset].setRGB( 
                     (LED_GAMMA_TEMP.r>>1) + (leds[offset].r>>1), 
                     (LED_GAMMA_TEMP.g>>1) + (leds[offset].g>>1), 
                     (LED_GAMMA_TEMP.b>>1) + (leds[offset].b>>1)
                     );
-                //set min backlight
+                //** set min backlight
                 leds[offset] |= min_bright;
             }
 
             //##########################################################################
-            // grab top line of led and avg
+            //** grab top line of led and avg
             for (int i =0; i<STRIP_WIDTH;i++){
                 pixel_temp={0,0,0,0};
+                //** along strip direction 2 samples
                 for (int j = 0; j<2; j++){
+                    //** toward center 4 samples
                     for (int k=0; k<4 ; k++){
                         #if defined IR_USE
                         //pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[top_buf[i]+j-k*IMG_WIDTH*2] : 0 ; 
@@ -320,14 +320,14 @@ void Task1code(void * pvParameters){
 
                 LED_GAMMA_TEMP = applyGamma_video(LED_GAMMA_TEMP, 2, 2, 2);
 
-                // top led offset = right +i
+                //** top led offset = right +i
                 offset = i+45;
                 leds[offset].setRGB( 
                     (LED_GAMMA_TEMP.r>>1) + (leds[offset].r>>1),
                     (LED_GAMMA_TEMP.g>>1) + (leds[offset].g>>1), 
                     (LED_GAMMA_TEMP.b>>1) + (leds[offset].b>>1)
                     );
-                //set min backlight
+                //** set min backlight
                 leds[offset] |= min_bright;
             }
 
@@ -335,22 +335,17 @@ void Task1code(void * pvParameters){
             // grab left line of led and avg
             for (int i = 0; i<STRIP_HEIGHT; i++){
                 pixel_temp={0,0,0,0};
-                // along strip direction 2 pixel
+                // along strip direction 2 samples
                 for (int j =0; j<2; j++){ 
-                    // toward center 4 pixel
+                    // toward center 4 samples
                     for (int k=0;k<4;k++){
                         #if defined IR_USE
                         //pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[left_buf[i]-j*IMG_WIDTH-k*3] : 0 ;
                         pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[left_buf[i]-left_off[i]*k] : 0 ;
                         #else
                         pixel_temp.pix_TEMP = Buffer[left_buf[i]-j*IMG_WIDTH-k*2];
-                        if (!NEO_FLAG){
-                            //tft.drawPixel((left_buf[i]-j*IMG_WIDTH-k*2)%TFT_WIDTH, (left_buf[i]-j*IMG_WIDTH-k*2)/TFT_WIDTH, TFT_BROWN);
-                        }
                         #endif
-                        //if (NEO_FLAG){
-                        //    pixel_temp.pix_TEMP = Buffer[right_buf[i]-j+k*IMG_WIDTH];
-                        //}
+
                         if (k==2 || k==3){
                             pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 10);
                             pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 5);
@@ -378,14 +373,14 @@ void Task1code(void * pvParameters){
                 LED_GAMMA_TEMP.b = (pixel_temp.B_TEMP>>2);
 
                 LED_GAMMA_TEMP = applyGamma_video(LED_GAMMA_TEMP, 2, 2, 2);
-                // offset = right + top + i
+                //** offset = right + top + i
                 offset = i+129;
                 leds[offset].setRGB( 
                     (LED_GAMMA_TEMP.r>>1) + (leds[offset].r>>1),
                     (LED_GAMMA_TEMP.g>>1) + (leds[offset].g>>1), 
                     (LED_GAMMA_TEMP.b>>1) + (leds[offset].b>>1)
                     );
-                //set min color 402510
+                //** set min color
                 leds[offset] |= min_bright;
             }
 
@@ -429,59 +424,91 @@ void Task1code(void * pvParameters){
                 LED_GAMMA_TEMP.b = (pixel_temp.B_TEMP>>2);
 
                 LED_GAMMA_TEMP = applyGamma_video(LED_GAMMA_TEMP,2, 2, 2);
-                // offset = right + top  + left +i
+                //** offset = right + top  + left +i
                 offset = i+174;            
                 leds[offset].setRGB( 
                     (LED_GAMMA_TEMP.r>>1) + (leds[offset].r>>1),
                     (LED_GAMMA_TEMP.g>>1) + (leds[offset].g>>1), 
                     (LED_GAMMA_TEMP.b>>1) + (leds[offset].b>>1)
                 );
-                //set min color 402510
+                //** set min color
                 leds[offset] |= min_bright;
             }
 
             FastLED.show();
-            //Serial.println("NEO type 1");
-            #if not defined IR_USE
-            delay(20);
-            Serial.println(String(millis()-last_t0)+" ms processed, led process loop");
-            #endif    
+            Serial.println(String(millis()-LED_T0)+" ms processed, led process loop");
+            LED_T0 = millis() - last_t0;
+            //tft.drawString(String(millis()- LED_T0) + " ms processed, led process loop",10,160);
         }
-        else if((NEO_TYPE&0b00000011) == 2){
+        else if((NEO_TYPE&0b00000011) == 2 && Process){
             for (uint i =0; i < NUM_LEDS; i++){
-                leds[i] |= min_bright;
+                leds[i] = min_bright;
             }
             delay(500);
-            Serial.println("NEO type 2, led = 30,22,18");
+            Process = !Process;
+            Serial.println("NEO type 2, led = (30,20,16)");
 
             FastLED.show();
         }
-        else if((NEO_TYPE&0b00000011) == 3){
+        else if((NEO_TYPE&0b00000011) == 3 && Process){
             for (uint i =0; i < NUM_LEDS; i++){
                 leds[i] = (38,25,25);
             }
             delay(500);
-            Serial.println("NEO type 3, led = 35, 20, 25");
+            Process = !Process;
+            Serial.println("NEO type 3, led = 38, 25, 25");
 
             FastLED.show();
         }
-        else if((NEO_TYPE&0b00000011) == 4){
+        else if((NEO_TYPE&0b00000111) == 4 && Process){
             for (uint i =0; i < NUM_LEDS; i++){
-                leds[i] = (25,20,30);
+                leds[i] = (255,255,255);
             }
             delay(500);
+            Process = !Process;
             Serial.println("NEO type 4, led = 25, 20, 30");
 
             FastLED.show();
         }
-        else {
+        else if(Process){
             for (uint i =0; i < NUM_LEDS; i++){
                 leds[i] = (0,0,0);
             }
             delay(500);
+            Process = !Process;
             Serial.println("NEO type NA, led = 0,0,0");
 
             FastLED.show();
+        }
+    }
+}*/
+
+void Task2code(void * pvParameters){
+    camera_fb_t *pic = esp_camera_fb_get();
+    while(1){
+        if (CAPTURE){
+            lastimage = millis();
+            ESP_LOGI(TAG, "Taking picture...");
+            if (pic){
+                esp_camera_fb_return(pic);
+            }
+            pic = esp_camera_fb_get();
+            ESP_LOGI(TAG, "Picture taken! Its size was: %zu bytes", pic->len);
+            
+            // use pic->buf to access the image, store image buffer for LED strip process and capture without 
+            // not know if can process read/write with same memory by taking picture and LED  strip process
+            #ifdef QQVGA
+                for (uint i = 0; i<38400; i+=2){
+                    Buffer[i/2] = pic->buf[i+1] | pic->buf[i]<<8;
+                    
+                }
+            #elif defined(QVGA)
+                for (uint i = 0; i<76800; i+=2){
+                    Buffer[i/2] = pic->buf[i+1] | pic->buf[i]<<8;
+                }
+            #endif
+            temp_time = millis()- lastimage;
+            //esp_camera_fb_return(pic);
         }
     }
 }
@@ -541,26 +568,39 @@ static esp_err_t init_camera(){
 void setup() {
     Serial.begin(115200);
     while (!Serial) { ; }
+    // begin camera
     if(ESP_OK != init_camera()) {
         //return;
         while (1){delay(1000);}
     }
     sensor_t * s = esp_camera_sensor_get();
     
-    //s->set_contrast(s, 0);       // -2 to 2
+    /*
+    s->set_wb_mode(s, 1);
+    s->set_saturation(s, 1);     // -2 to 2
+    s->set_contrast(s, 1);       // -2 to 2
+    s->set_brightness(s, -1);   // -2 to 2
+    s->set_gainceiling(s, GAINCEILING_4X);
+    s->set_aec_value(0, 500);
+    s->set_ae_level(s, -1);
+    */
+    // wake up from ext0, After waking up from sleep, the IO pad used for wakeup will be configured as RTC IO. 
+    // Therefore, before using this pad as digital GPIO, users need to reconfigure it using rtc_gpio_deinit() function.
+    // change the state of sleep, make ESP32 know it wake up from sleep mode,
+    if (sleep_status){
+        rtc_gpio_deinit(GPIO_NUM_4);
+        Serial.print("reboot from sleep mode");
+        sleep_status = 0; // reset to 0 state for clear sleep state
+    }
     
-    //s->set_saturation(s, 0);     // -2 to 2
-    //s->set_hmirror(s, 1);
-    // begin camera
-    //int camInit = cam.init(esp32cam_aithinker_config);
-    //Serial.printf("Camera init returned %d\n", camInit);
+    
 
 
     // begin IR receiver
     #if defined IR_USE
     irrecv.enableIRIn();  // Start the receiver
-    //Serial.print("IRrecvDemo is now running and waiting for IR message on Pin ");
-    //Serial.println(kRecvPin);
+    Serial.print("IRrecvDemo is now running and waiting for IR message on Pin ");
+    Serial.println(kRecvPin);
     #endif
 
     // begin setup the TFT
@@ -582,18 +622,29 @@ void setup() {
     //TypicalPixelString=0xFFE08C /* 255, 224, 140 */,
     FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
     FastLED.setBrightness( BRIGHTNESS );
+    FastLED.setMaxPowerInMilliWatts(12*5000);
     
-    
-    //********************** core0 operation
-    xTaskCreatePinnedToCore(
+    //********************** core 1 operation for LED
+    /*xTaskCreatePinnedToCore(
         Task1code,  //* Function to implement the task
         "Task1",    // Name of the task
         10000,      //* stack size in words
         NULL,       //* Task input parameter
         0,      //* priority of the task
         &Task1, //* Task handle.
+        1
+    );*/
+    //** camera operation on core 0 
+    xTaskCreatePinnedToCore(
+        Task2code,  //* Function to implement the task
+        "Task2",    // Name of the task
+        10000,      //* stack size in words
+        NULL,       //* Task input parameter
+        1,          //* priority of the task
+        &Task2,     //* Task handle.
         0
     );
+    
     ledcSetup(0, 10, 8);
     //ledcAttachPin(LED_BUILTIN, 0);
     ledcWrite(0, 245);
@@ -603,26 +654,304 @@ void setup() {
 void loop()
 {
 
-    uint32_t lastimage = millis();
-    uint32_t temp_time;
-    camera_fb_t *pic = esp_camera_fb_get();
+    decode_results results;
+    //uint32_t lastimage = millis();
+    uint32_t calt_time=millis();
+    uint16_t offset = 0;
+    uint32_t last_t0;
+    //camera_fb_t *pic = esp_camera_fb_get();
     float_t capture_fps;
     String print_on_lcd="  ";
     while (1)
     {
-        lastimage = millis();
-        if (CAPTURE){
+
+        // led ambilight
+    
+        if((NEO_TYPE&0b00000011) ==1 && Process){
+            // **********  the strip led data
+            last_t0 = millis();
+            //##########################################################################
+            // grab right line of led and avg       
+            for (int i = 0; i<STRIP_HEIGHT; i++){
+
+
+                pixel_temp={0,0,0,0};
+
+                //** along strip direction 2 samples
+                for (int j =0; j<2; j++){
+                    //** toward center 4 samples
+                    for (int k=0;k<4;k++){
+                        #if defined IR_USE
+                        //pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[right_buf[i]-j*IMG_WIDTH+k*9] : 0 ;
+                        pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[right_buf[i]-right_off[i]*k] : 0 ;
+                        if (NEO_FLAG && i <= 20){
+                            //** try to draw on TFT but failed, not yet clear on why failed
+                            //tft.drawPixel((right_buf[i]-j*IMG_WIDTH+k*3)%TFT_WIDTH, (right_buf[i]-j*IMG_WIDTH+k*3)/TFT_WIDTH, TFT_DARKCYAN);
+                        }
+                        #else
+                        pixel_temp.pix_TEMP = Buffer[right_buf[i]-j*IMG_WIDTH+k*3];
+                        if (!NEO_FLAG && i == 1){
+                            tft.drawPixel((right_buf[i]-j*IMG_WIDTH+k*3)%TFT_WIDTH, (right_buf[i]-j*IMG_WIDTH+k*3)/TFT_WIDTH, TFT_DARKCYAN);
+                        }
+                        #endif
+                
+                        if (k==2 || k==3){
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 10);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 5);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 1);
+                        }
+                        else if (k==1){
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 9);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 4);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 2);
+                        }
+                        else{
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 8);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 3);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 3);
+                        }
+
+                    }
+
+                }
+
+                //pixel_temp.R_TEMP = dim8_video((pixel_temp.R_TEMP>>2));
+                //pixel_temp.G_TEMP = dim8_video((pixel_temp.G_TEMP>>2));
+                //pixel_temp.B_TEMP = dim8_video((pixel_temp.B_TEMP>>2));
+
+                LED_GAMMA_TEMP.r = (pixel_temp.R_TEMP>>2);
+                LED_GAMMA_TEMP.g = (pixel_temp.G_TEMP>>2);
+                LED_GAMMA_TEMP.b = (pixel_temp.B_TEMP>>2);
+
+                LED_GAMMA_TEMP = applyGamma_video(LED_GAMMA_TEMP, 2, 2, 2);
+                
+                //** start from right i+0
+                offset = i;
+                leds[offset].setRGB( 
+                    (LED_GAMMA_TEMP.r>>1) + (leds[offset].r>>1), 
+                    (LED_GAMMA_TEMP.g>>1) + (leds[offset].g>>1), 
+                    (LED_GAMMA_TEMP.b>>1) + (leds[offset].b>>1)
+                    );
+                //** set min backlight
+                leds[offset] |= min_bright;
+            }
+
+            //##########################################################################
+            //** grab top line of led and avg
+            for (int i =0; i<STRIP_WIDTH;i++){
+                pixel_temp={0,0,0,0};
+                //** along strip direction 2 samples
+                for (int j = 0; j<2; j++){
+                    //** toward center 4 samples
+                    for (int k=0; k<4 ; k++){
+                        #if defined IR_USE
+                        //pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[top_buf[i]+j-k*IMG_WIDTH*2] : 0 ; 
+                        pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[top_buf[i]-top_off[i]*k] : 0 ; 
+                        #else
+                        pixel_temp.pix_TEMP = Buffer[top_buf[i]+j-k*IMG_WIDTH*2];   
+                        #endif
+
+                        //avg the colors near by
+                        if (k==2 || k==3){
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 10);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 5);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 1);
+                        }
+                        else if (k==1){
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 9);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 4);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 2);
+                        }
+                        else{
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 8);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 3);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 3);
+                        }
+                    }
+                    
+                }
+
+                //pixel_temp.R_TEMP = dim8_video((pixel_temp.R_TEMP>>2)+0);
+                //pixel_temp.G_TEMP = dim8_video((pixel_temp.G_TEMP>>2)+0);
+                //pixel_temp.B_TEMP = dim8_video((pixel_temp.B_TEMP>>2)-0);
+                LED_GAMMA_TEMP.r = (pixel_temp.R_TEMP>>2);
+                LED_GAMMA_TEMP.g = (pixel_temp.G_TEMP>>2);
+                LED_GAMMA_TEMP.b = (pixel_temp.B_TEMP>>2);
+
+                LED_GAMMA_TEMP = applyGamma_video(LED_GAMMA_TEMP, 2, 2, 2);
+
+                //** top led offset = right +i
+                offset = i+45;
+                leds[offset].setRGB( 
+                    (LED_GAMMA_TEMP.r>>1) + (leds[offset].r>>1),
+                    (LED_GAMMA_TEMP.g>>1) + (leds[offset].g>>1), 
+                    (LED_GAMMA_TEMP.b>>1) + (leds[offset].b>>1)
+                    );
+                //** set min backlight
+                leds[offset] |= min_bright;
+            }
+
+            //##########################################################################
+            // grab left line of led and avg
+            for (int i = 0; i<STRIP_HEIGHT; i++){
+                pixel_temp={0,0,0,0};
+                // along strip direction 2 samples
+                for (int j =0; j<2; j++){ 
+                    // toward center 4 samples
+                    for (int k=0;k<4;k++){
+                        #if defined IR_USE
+                        //pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[left_buf[i]-j*IMG_WIDTH-k*3] : 0 ;
+                        pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[left_buf[i]-left_off[i]*k] : 0 ;
+                        #else
+                        pixel_temp.pix_TEMP = Buffer[left_buf[i]-j*IMG_WIDTH-k*2];
+                        #endif
+
+                        if (k==2 || k==3){
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 10);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 5);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 1);
+                        }
+                        else if (k==1){
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 9);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 4);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 2);
+                        }
+                        else{
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 8);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 3);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 3);
+                        }
+                    }
+
+                }
+
+                //pixel_temp.R_TEMP = dim8_video((pixel_temp.R_TEMP>>2)+0);
+                //pixel_temp.G_TEMP = dim8_video((pixel_temp.G_TEMP>>2)+0);
+                //pixel_temp.B_TEMP = dim8_video((pixel_temp.B_TEMP>>2)-0);
+                LED_GAMMA_TEMP.r = (pixel_temp.R_TEMP>>2);
+                LED_GAMMA_TEMP.g = (pixel_temp.G_TEMP>>2);
+                LED_GAMMA_TEMP.b = (pixel_temp.B_TEMP>>2);
+
+                LED_GAMMA_TEMP = applyGamma_video(LED_GAMMA_TEMP, 2, 2, 2);
+                //** offset = right + top + i
+                offset = i+129;
+                leds[offset].setRGB( 
+                    (LED_GAMMA_TEMP.r>>1) + (leds[offset].r>>1),
+                    (LED_GAMMA_TEMP.g>>1) + (leds[offset].g>>1), 
+                    (LED_GAMMA_TEMP.b>>1) + (leds[offset].b>>1)
+                    );
+                //** set min color
+                leds[offset] |= min_bright;
+            }
+
+            //##########################################################################
+            // grab bottom line of led and avg
+            for (int i =0; i<STRIP_WIDTH;i++){
+                pixel_temp={0,0,0,0};
+                for (int j = 0; j<2; j++){
+                    for (int k=0;k<4;k++){
+                        //delayMicroseconds(10);
+                        #if defined IR_USE
+                        //pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[bottom_buf[i]+j+k*IMG_WIDTH*2] : 0 ;
+                        pixel_temp.pix_TEMP = (NEO_FLAG)? Buffer[bottom_buf[i]+bottom_off[i]*k] : 0 ;
+                        #else
+                        pixel_temp.pix_TEMP = Buffer[bottom_buf[i]+j+k*IMG_WIDTH*2];
+                        #endif
+                        if (k==2 || k==3){
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 10);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 5);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 1);
+                        }
+                        else if (k==1){
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 9);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 4);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 2);
+                        }
+                        else{
+                            pixel_temp.R_TEMP += ((pixel_temp.pix_TEMP & 0b1111100000000000) >> 8);
+                            pixel_temp.G_TEMP += ((pixel_temp.pix_TEMP & 0b0000011111100000) >> 3);
+                            pixel_temp.B_TEMP += ((pixel_temp.pix_TEMP & 0b0000000000011111) << 3);
+                        }
+                    }
+                    
+                }
+
+                //pixel_temp.R_TEMP = dim8_video((pixel_temp.R_TEMP>>2)+0);
+                //pixel_temp.G_TEMP = dim8_video((pixel_temp.G_TEMP>>2)+0);
+                //pixel_temp.B_TEMP = dim8_video((pixel_temp.B_TEMP>>2)-0);
+                LED_GAMMA_TEMP.r = (pixel_temp.R_TEMP>>2);
+                LED_GAMMA_TEMP.g = (pixel_temp.G_TEMP>>2);
+                LED_GAMMA_TEMP.b = (pixel_temp.B_TEMP>>2);
+
+                LED_GAMMA_TEMP = applyGamma_video(LED_GAMMA_TEMP,2, 2, 2);
+                //** offset = right + top  + left +i
+                offset = i+174;            
+                leds[offset].setRGB( 
+                    (LED_GAMMA_TEMP.r>>1) + (leds[offset].r>>1),
+                    (LED_GAMMA_TEMP.g>>1) + (leds[offset].g>>1), 
+                    (LED_GAMMA_TEMP.b>>1) + (leds[offset].b>>1)
+                );
+                //** set min color
+                leds[offset] |= min_bright;
+            }
+
+            FastLED.show();
+            //Serial.println(String(millis()-last_t0)+" ms processed, led process loop");
+            LED_T0 = millis() - last_t0;
+            //tft.drawString(String(millis()- LED_T0) + " ms processed, led process loop",10,160);
+        }
+        else if((NEO_TYPE&0b00000011) == 2 && Process){
+            for (uint i =0; i < NUM_LEDS; i++){
+                leds[i] = min_bright;
+            }
+            delay(500);
+            Process = !Process;
+            Serial.println("NEO type 2, led = (30,20,16)");
+
+            FastLED.show();
+        }
+        else if((NEO_TYPE&0b00000011) == 3 && Process){
+            for (uint i =0; i < NUM_LEDS; i++){
+                leds[i] = (38,28,20);
+            }
+            delay(500);
+            Process = !Process;
+            Serial.println("NEO type 3, led = 38, 25, 25");
+
+            FastLED.show();
+        }
+        else if((NEO_TYPE&0b00000111) == 4 && Process){
+            for (uint i =0; i < NUM_LEDS; i++){
+                leds[i] = TypicalLEDStrip;//(255,255,255);
+            }
+            delay(500);
+            Process = !Process;
+            Serial.println("NEO type 4, led = 25, 20, 30");
+
+            FastLED.show();
+        }
+        else if(Process){
+            for (uint i =0; i < NUM_LEDS; i++){
+                leds[i] = (0,0,0);
+            }
+            delay(500);
+            Process = !Process;
+            Serial.println("NEO type NA, led = 0,0,0");
+
+            FastLED.show();
+        }
+    
+        //lastimage = millis();
+        /*if (CAPTURE){
             ESP_LOGI(TAG, "Taking picture...");
             if (pic){
                 esp_camera_fb_return(pic);
             }
             pic = esp_camera_fb_get();
-            
-            // use pic->buf to access the image
             ESP_LOGI(TAG, "Picture taken! Its size was: %zu bytes", pic->len);
-        
             
-            //for (uint i = 0; i<cam.fb->len; i+=2){
+            // use pic->buf to access the image, store image buffer for LED strip process and capture without 
+            // not know if can process read/write with same memory by taking picture and LED  strip process
             #ifdef QQVGA
                 for (uint i = 0; i<38400; i+=2){
                     Buffer[i/2] = pic->buf[i+1] | pic->buf[i]<<8;
@@ -631,18 +960,11 @@ void loop()
             #elif defined(QVGA)
                 for (uint i = 0; i<76800; i+=2){
                     Buffer[i/2] = pic->buf[i+1] | pic->buf[i]<<8;
-                    
                 }
             #endif
 
-
-            #if not defined IR_USE
-            Serial.print("Picture taken! Its size was:");
-            Serial.println(pic->len);
-            
-            #endif
             //esp_camera_fb_return(pic);
-        }
+        }*/
        
         if(!NEO_FLAG){
             // cast image to TFT
@@ -675,7 +997,7 @@ void loop()
                 }
             }
 
-            Serial.println(String(millis()- lastimage) + " ms processed, 1 loop");
+   
             
         }
         else{
@@ -683,10 +1005,8 @@ void loop()
         }
 
 
-        //Serial.println(String(millis()- lastimage) + " ms processed, 1 loop");
+        //*** IR decode and process if matches
         #if defined IR_USE
-        
-        //#if defined IR_USE
         
         if (irrecv.decode(&results)) {
             
@@ -702,6 +1022,7 @@ void loop()
                 NEO_TYPE ++;
                 NEO_FLAG = 1;
                 CAPTURE = 1;
+                Process = true;
                 Serial.printf("Neotype %d\n", NEO_TYPE);
                 Serial.println(F("off lamp, on tv set"));
             }
@@ -720,9 +1041,29 @@ void loop()
 
                 // off power of LCD
                 digitalWrite(TFT_BKL, HIGH);
+                tft.fillScreen(TFT_BLACK);
 
                 // slow down esp32?
                 CAPTURE = 0;
+
+                // change the state of sleep, make ESP32 know it wake up from sleep mode,
+                sleep_status=1;
+                /*
+                First we configure the wake up source
+                We set our ESP32 to wake up for an external trigger.
+                There are two types for ESP32, ext0 and ext1 .
+                ext0 uses RTC_IO to wakeup thus requires RTC peripherals
+                to be on while ext1 uses RTC Controller so doesnt need
+                peripherals to be powered on.
+                Note that using internal pullups/pulldowns also requires
+                RTC peripherals to be turned on.
+                */
+            
+                esp_sleep_enable_ext0_wakeup(GPIO_NUM_4,0); //GPIO_NUM_4 , 1 = High, 0 = Low
+                Serial.println("Going to sleep now");
+                delay(1000);
+                esp_deep_sleep_start();
+                
             }
 
             else if (results.value == 0xA594C007 || results.value== 0x678A85BC){
@@ -738,11 +1079,19 @@ void loop()
         }
         //delay(1000);
         #endif
-        temp_time = millis()- lastimage;
-        capture_fps = (temp_time)? 1000.0/temp_time: 0.0;
-        print_on_lcd = "core0 FPS: "+String(capture_fps,1);
-        tft.drawString(print_on_lcd,10,20);        
         
+        if (millis()-calt_time >200){
+            capture_fps = (temp_time)? 1000.0/temp_time: 0.0;
+            print_on_lcd = "core1 FPS: "+String(capture_fps,2);
+            Serial.println(String(temp_time) + " ms processed, 1 loop");
+            tft.drawString(String(temp_time) + " ms processed, 1 loop",10,180);  
+            tft.drawString("NEO enable: " + String(NEO_FLAG)+", NEO type: "+String(NEO_TYPE), 10, 140);  
+            tft.drawString("LED strip time:    ", 10, 160);
+            tft.drawString(String(LED_T0), 106, 160);
+            tft.drawString(print_on_lcd,10,120);
+            calt_time=millis();        
+        }
         //vTaskDelay(1000 / portTICK_RATE_MS);
+
     }
 }
