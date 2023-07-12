@@ -9,10 +9,10 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
 
 ## Key functions of the projects
 
-- FPS around 30FPS
+- FPS around 31FPS
     - with RGB565, QVGA setting, pause pushing image to TFT, roughly 15fps while push picture to TFT.
-    - main loop of taking photo on ESP32 core 1
-    - image process and pushing WS2815 data by ESP32 core 0
+    - main loop for pushing WS2815 data(each cycle ~10ms) and checking IR signal on ESP32 core 1
+    - core 0 handling full power for taking photo and merge RGB565 data for calculation (each cycle ~31ms)
 - receive my IR remote of ceilling light for activate the movie mode
 - RF433 remote control for controlling my RF controlled AC socket connecting to IKEA led strip powering
   - the @sui77/rc-switch arduino library is not fit my AC socket controller, there need a variable light contorl available library, is the @1technophile/NewRemoteSwitch
