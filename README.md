@@ -66,8 +66,8 @@ with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 24
 - GPIO 1, 3 used for UART communication with PC
 - original GND near the flash is ***modified as RST pin in the clone ESP32-cam board*** wihcih is useful for pin release
 - ***remove the R13(in reference schematic) 1k resistor or flash to stop the light***, flash light is not requried for the application
-- still missing one control pin for LCD backlight
-- 
+- still missing one control pin for LCD backlight, GPIO33 is the candidate but it will need solder fix wire for another circuit
+  
 ## Actual performance of the ambilight
 ### calibrating the strip location from the image  
 ![IMG_20230615_220835346_HDR](https://github.com/WASmars/the_project/assets/54877239/cffb8529-0237-45a7-a857-8d0ed28df1b9)
