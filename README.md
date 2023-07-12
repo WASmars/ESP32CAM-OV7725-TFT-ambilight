@@ -10,13 +10,15 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
 ## Key functions of the projects
 
 - FPS around 31FPS
-    - with RGB565, QVGA setting, pause pushing image to TFT, roughly 15fps while push picture to TFT.
-    - main loop for pushing WS2815 data(each cycle ~10ms) and checking IR signal on ESP32 core 1
+    - with RGB565, QVGA setting. single core can achieve 31FPS
+    - main loop for pushing WS2815 data(each image data to LED strip cycle ~10ms) and checking IR signal on ESP32 core 1
     - core 0 handling full power for taking photo and merge RGB565 data for calculation (each cycle ~31ms)
-- receive my IR remote of ceilling light for activate the movie mode
+- receive my IR remote of ceilling light for activate the movie mode (dim ceilling light + turn on ambilight + strip light of TV deck), turn light off(for alignment of the camera image), and ESP32 sleep mode with turning off all light
+- in ESP32cam sleep mode still have 100mA consumption on 12V est it from *LCD backlight typ 60mA in datasheet*, *LDO 1117 3.3V <10mA*, *camera standby current 1mA?*, *IR and RF module standby current*, and *est 90% of efficiency of 12V-5V DCDC*
+- wake ESP32 cam sleep mode from ext0, activate wake up with IR receiver low signal on GPIO4
 - RF433 remote control for controlling my RF controlled AC socket connecting to IKEA led strip powering
   - the @sui77/rc-switch arduino library is not fit my AC socket controller, there need a variable light contorl available library, is the @1technophile/NewRemoteSwitch
-- AEC, AWB is manual setting for consist color during difference scenes, but the HDR video still has chances got too blueish or less color
+- AEC, AWB is manual setting for consist color during difference scenes, but the HDR video still has chances got too blueish or less color due to high brightness with no AEC
 
 
 currently depend on my TV set, the image location can only be defined by self calculating on excel, my TV set is 65inch, and 15 cm height and 20cm away from the camera.  
@@ -64,7 +66,8 @@ with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 24
 - GPIO 1, 3 used for UART communication with PC
 - original GND near the flash is ***modified as RST pin in the clone ESP32-cam board*** wihcih is useful for pin release
 - ***remove the R13(in reference schematic) 1k resistor or flash to stop the light***, flash light is not requried for the application
-
+- still missing one control pin for LCD backlight
+- 
 ## Actual performance of the ambilight
 ### calibrating the strip location from the image  
 ![IMG_20230615_220835346_HDR](https://github.com/WASmars/the_project/assets/54877239/cffb8529-0237-45a7-a857-8d0ed28df1b9)
