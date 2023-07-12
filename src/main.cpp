@@ -61,7 +61,7 @@ only
 #include "esp_camera.h"
 #include "sensor.h"
 #include "strip_index.h"
-#define CONFIG_CAMERA_CORE1 1
+//#define CONFIG_CAMERA_CORE1 1
 //#define CONFIG_CAMERA_CORE0 1
 TaskHandle_t Task1;
 TaskHandle_t Task2;
