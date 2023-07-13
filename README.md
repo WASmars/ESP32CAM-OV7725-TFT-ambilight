@@ -88,9 +88,10 @@ notice on the R13 resistor and GND/R pin
 
 
 
-### ESP32-cam image and pinout
+### ESP32-cam  pinout
 
-![image](https://github.com/WASmars/the_project/assets/54877239/f2d47d68-0da5-4785-87eb-bbe4525919ff)
+![image](/image/7.ESP32-CAM-pinout-mischianti.png)
+[pinout original source](https://mischianti.org/2021/09/02/esp32-cam-high-resolution-pinout-and-specs/)
 [detail pin info can refer](https://github.com/raphaelbs/esp32-cam-ai-thinker/blob/master/docs/esp32cam-pin-notes.md)
 
 ### ESP32-cam schematic
