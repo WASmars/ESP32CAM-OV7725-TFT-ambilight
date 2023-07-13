@@ -14,7 +14,12 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
     - main loop for pushing WS2815 data(each image data to LED strip cycle ~10ms) and checking IR signal on ESP32 core 1
     - core 0 handling full power for taking photo and merge RGB565 data for calculation (each cycle ~31ms)
 - receive my IR remote of ceilling light for activate the movie mode (dim ceilling light + turn on ambilight + strip light of TV deck), turn light off(for alignment of the camera image), and ESP32 sleep mode with turning off all light
-- in ESP32cam sleep mode still have 100mA consumption on 12V est it from *LCD backlight typ 60mA in datasheet*, *LDO 1117 3.3V <10mA*, *camera standby current 1mA?*, *IR and RF module standby current*, and *est 90% of efficiency of 12V-5V DCDC*
+- in ESP32cam sleep mode still have 100mA consumption on 12V est it from
+	- LCD backlight typ 60mA in datasheet
+	- LDO 1117 3.3V <10mA
+ 	- camera standby current 1mA?
+  	- IR and RF module standby current
+  	- combined above with total est 90% of efficiency of 12V-5V DCDC
 - wake ESP32 cam sleep mode from ext0, activate wake up with IR receiver low signal on GPIO4
 - RF433 remote control for controlling my RF controlled AC socket connecting to IKEA led strip powering
   - the @sui77/rc-switch arduino library is not fit my AC socket controller, there need a variable light contorl available library, is the @1technophile/NewRemoteSwitch
@@ -45,7 +50,6 @@ with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 24
 
 ## Wiring of the project
 ![image](/image/1.HW_connection.png)
-![image](https://github.com/WASmars/the_project/assets/54877239/a41b12f6-0b1a-4ae0-b5e5-bd952424c0dc)
 
 |ESP32CAM pin| wiring to/from |
 |-----------|-------------|
@@ -74,12 +78,11 @@ with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 24
 
 ### actual performance
 **image need to update**
-
+![image](/image/VID_20230709_115851387_exported_43126.jpg)
 
 # REFERENCE DOCUMENT OF ESP32 AND RELATED HARDWARE
 ## ESP32-CAM
 notice on the R13 resistor and GND/R pin  
-![image](https://github.com/WASmars/the_project/assets/54877239/08f9af69-4bb7-4ae5-954d-5228e4295feb)
 ![image](/image/4.ESP32cam+MB.jpg)
 
 
