@@ -44,7 +44,7 @@ with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 24
     bodmer/TFT_eSPI@^2.5.23
 
 ## Wiring of the project
-
+![image](/image/1.HW_connection.png)
 ![image](https://github.com/WASmars/the_project/assets/54877239/a41b12f6-0b1a-4ae0-b5e5-bd952424c0dc)
 
 |ESP32CAM pin| wiring to/from |
@@ -70,7 +70,7 @@ with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 24
   
 ## Actual performance of the ambilight
 ### calibrating the strip location from the image  
-![IMG_20230615_220835346_HDR](https://github.com/WASmars/the_project/assets/54877239/cffb8529-0237-45a7-a857-8d0ed28df1b9)
+![image](/image/IMG_20230620_210950448_HDR.jpg)
 
 ### actual performance
 **image need to update**
@@ -80,7 +80,7 @@ with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 24
 ## ESP32-CAM
 notice on the R13 resistor and GND/R pin  
 ![image](https://github.com/WASmars/the_project/assets/54877239/08f9af69-4bb7-4ae5-954d-5228e4295feb)
-
+![image](/image/4.ESP32cam+MB.jpg)
 
 
 
@@ -92,19 +92,20 @@ notice on the R13 resistor and GND/R pin
 
 ### ESP32-cam schematic
 
-![image](https://github.com/WASmars/the_project/assets/54877239/6bd5947a-d09d-4417-a245-3cfcf2be35cf)  
-
+![image](/image/3.ESP32-cam_schematic.png)
 You can download a PDF file with better resolution on [this GitHub repository](https://github.com/SeeedDocument/forum_doc/blob/master/reg/ESP32_CAM_V1.6.pdf)
 
 ### OV7725 ULTRA WIDE CAMERA WITH M12 LENS
 
-![image](https://github.com/WASmars/the_project/assets/54877239/6b4b152f-4d8b-471a-8fad-e8294fd2a499)  
+
+![image](/image/5.OV7725.png)
  OV7725攝像頭模組模塊 30萬像素 M12鏡頭適用於STM32 OPENMV K210 [shop link](https://world.taobao.com/item/wap/668570605351.htm?spm=a21wu.23452756-tw.taglist-content.30.6cca2b64RCVOqW#)
 
 
 ### TFT LCD 2.2inch, 320x240 pixels ili9341 driver
 
-![image](https://github.com/WASmars/the_project/assets/54877239/244867a5-7cef-4f7b-bdfd-f4b7b1e8acc2)
+![image](/image/2.tft_LCD.jpg)
+
 | TFT pin| def | wiring to/from|
 |-------|--------|-------------|
 | PIN1	| VCC    | TO ESP32 3.3V| 
@@ -121,7 +122,7 @@ can download a related documentation on [this site](http://www.lcdwiki.com/2.2in
 
 ### 433MHZ transmitter module
 
-![image](https://github.com/WASmars/the_project/assets/54877239/94d889eb-c816-4ac8-a0d0-f30657eded81)  
+![image](/image/6.RF433_TX.png)  
 Regular cheap 433Mhz TX module, with antenna connected for 17.3cm long solid wire, don't use the stranded cable it would not help in the range (google it for detail)
 
 ### IR receiver module
