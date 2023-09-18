@@ -52,8 +52,10 @@ with my 65inch TV, need 45 LEDs on right/left side, and 84 LEDs on top/down side
     bodmer/TFT_eSPI@^2.5.23
 
 ## Wiring of the project
-![image](/image/1.HW_connection.png)
-![image](https://github.com/WASmars/ESP32CAM-OV7725-TFT-ambilight/assets/54877239/2084c111-2783-48bd-a98f-84dfe6d8ea17)
+![image](https://github.com/WASmars/ESP32CAM-OV7725-TFT-ambilight/assets/54877239/b4005120-08e8-4fd3-9460-f5442fed4556)
+
+![image](https://github.com/WASmars/ESP32CAM-OV7725-TFT-ambilight/assets/54877239/81f994aa-d62f-42ce-9175-9ab6ec777292)
+
 
 |ESP32CAM pin| wiring to/from |
 |-----------|-------------|
