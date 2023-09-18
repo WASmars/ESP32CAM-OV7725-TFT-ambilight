@@ -14,7 +14,7 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
     - main loop for pushing WS2815 data(each image data to LED strip cycle ~10ms) and checking IR signal on ESP32 core 1
     - core 0 handling full power for taking photo and merge RGB565 data for calculation (each cycle ~31ms)
 - the LED location data in the ***/include/strip_data.h***, modify it whenever needed
-- 
+- LED light average with previous data, making smooth change over frame to frame, 3 update between frames
 - receive IR signal from ceilling light for activate the movie mode (dim ceilling light + turn on ambilight + strip light of TV deck), turn light off(for alignment of the camera image), and ESP32 sleep mode with turning off all light
 - in ESP32cam sleep mode still have 100mA consumption on 12V est it from
 	- LCD backlight typ 60mA in datasheet
