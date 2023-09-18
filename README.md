@@ -2,7 +2,7 @@
 
 ## this is only personal project, not really an expert in ESP32 and coding, the code is really messy and may have only little support from me.
 
-# ESP32-cam with OV7725, ili9341 320x240 TFT and WS2815 for ambiligh
+# ESP32-cam with OV7725, ili9341 320x240 TFT and WS2815 for ambilight
 
 in order to make the ambiligt with non app installed, currently Arduino base, no considering low power, as mentioned by @pierre-muth/OV7725_ESP32cam The OV7725 is a more sensitive sensor compare to the one usually found with the ESP32cam board (often the OV2640)  
 well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need of wifi web server, that saves alot of computing power to achieve 30FPS for single core doing only taking picture by ov7725.
@@ -13,8 +13,9 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
     - with RGB565, QVGA setting. single core can achieve 31FPS
     - main loop for pushing WS2815 data(each image data to LED strip cycle ~10ms) and checking IR signal on ESP32 core 1
     - core 0 handling full power for taking photo and merge RGB565 data for calculation (each cycle ~31ms)
-- receive IR signal from ceilling light for activate the movie mode (dim ceilling light + turn on ambilight + strip light of TV deck), turn light off(for alignment of the camera image), and ESP32 sleep mode with turning off all light
 - the LED location data in the ***/include/strip_data.h***, modify it whenever needed
+- 
+- receive IR signal from ceilling light for activate the movie mode (dim ceilling light + turn on ambilight + strip light of TV deck), turn light off(for alignment of the camera image), and ESP32 sleep mode with turning off all light
 - in ESP32cam sleep mode still have 100mA consumption on 12V est it from
 	- LCD backlight typ 60mA in datasheet
 	- LDO 1117 3.3V <10mA
@@ -27,10 +28,10 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
 - AEC, AWB is manual setting for consist color during difference scenes, but the HDR video still has chances got too blueish or less color due to high brightness with no AEC
 
 
-currently depend on my TV set, the image location can only be defined by self calculating on excel, my TV set is 65inch, and 15 cm height and 20cm away from the camera.  
-I turned off the AEC and AWB for the low light environment of my movie, gaming senario, however there still has color shift in the result, but can modify with the esp32 built in image process function *gamma calculation*
+fully based on my TV set, the image location can only be defined by self calculating on data included ***/include/strip_data.h***, my TV set is 65inch, and 15 cm height and 20cm away from the camera.  
+Turned off the AEC and AWB for the low light environment of my movie, gaming senario, however there still has color shift in the result, but can modify with the esp32 built in image process function *gamma calculation*, more detail adjustment can reffer to [datasheet of OV7725](/Doc/ov7725.pdf)
 
-with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 248 LEDs by 50 LEDs/meter LED strip, 12V power require ~40W [WLED calculator](https://wled-calculator.github.io/)
+with my 65inch TV, need 45 LEDs on right/left side, and 84 LEDs on top/down side, total 258 LEDs by 60 LEDs/meter LED strip, power require ~40W(3.38 A/12V) [WLED calculator](https://wled-calculator.github.io/), however in my real measurement the current consumption is only ~2.5A, measure before adding fuses to the circuit.
 
 
 ## Required hardware
@@ -52,6 +53,7 @@ with my 65inch TV, need 45 LEDs on right/left, and 84 LEDs on top/down, total 24
 
 ## Wiring of the project
 ![image](/image/1.HW_connection.png)
+![image](https://github.com/WASmars/ESP32CAM-OV7725-TFT-ambilight/assets/54877239/2084c111-2783-48bd-a98f-84dfe6d8ea17)
 
 |ESP32CAM pin| wiring to/from |
 |-----------|-------------|
