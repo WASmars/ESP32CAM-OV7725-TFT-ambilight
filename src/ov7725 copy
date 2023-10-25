@@ -30,7 +30,7 @@ static const uint8_t default_regs[][2] = {
     {COM7,          COM7_RES_QVGA | COM7_FMT_YUV},
 
     {COM4,          0x01 | 0x30}, /* bypass PLL (0x00:off, 0x40:4x, 0x80:6x, 0xC0:8x) */
-    {CLKRC,         0x80 | 0x03}, /* Res/Bypass pre-scalar (0x40:bypass, 0x00-0x3F:prescaler PCLK=XCLK*PLL/ [ (prescaler + 1)*2 ] */
+    {CLKRC,         0x80 | 0x03}, /* Res/Bypass pre-scalar (0x40:bypass, 0x00-0x3F:prescaler PCLK=XCLK/(prescaler + 1)/2  */
 
     // QVGA Window Size
     {HSTART,        0x3F},
@@ -47,7 +47,7 @@ static const uint8_t default_regs[][2] = {
     {COM12,         0x03},
     {TGT_B,         0x7F},
     {FIXGAIN,       0x5D},//0x09
-    //{AWB_CTRL0,     0xE0},
+    {AWB_CTRL0,     0xE0},
     {DSP_CTRL1,     0xFF},//ff
 
     {DSP_CTRL2,     DSP_CTRL2_VDCW_EN | DSP_CTRL2_HDCW_EN | DSP_CTRL2_HZOOM_EN | DSP_CTRL2_VZOOM_EN},
@@ -55,6 +55,11 @@ static const uint8_t default_regs[][2] = {
     {DSP_CTRL3,     0x00},
     {DSP_CTRL4,     0x00},
     {DSPAUTO,       0xFF},
+
+    {COM8,          0xFc}, //FE AEC off, FC AEC/AWB off
+    {AECH,          0x00},
+    {AEC,           0x3f},
+    
     /*
     COM8
     Bit[3]: Fine AEC ON/OFF control
@@ -71,37 +76,17 @@ static const uint8_t default_regs[][2] = {
     1: Auto mode
     */
 
-    {COM8,          0xFc}, //FE AEC off, FC AEC/AWB off
-    {AWB_CTRL0,     0xE0},
-    {AWB_CTRL3,     0xAA},
-    {AWB_CTRL1,     0x5c}, //added 50
-    //-* AWB sunny
-    {BLUE,          0x5A}, // 5A
-    {RED,           0x40}, //5C
-    {GREEN,         0x3a}, //30
-    // * AWB HOME
-    //{BLUE,          0x96},
-    //{RED,           0x40},
-
-
-    {AECH,          0x00},
-    {AEC,           0x3f},
-    //AEC[15:0] = {AECH[7:0] (0x08), AEC[7:0] (0x10)}
-    //Texposure = AEC[15:0] × Trow interval
-    
     {COM6,          0xC5},
     {COM9,          0x01}, //0x11, Bit[7]: Histogram or average based AEC/AGC selection
     {COM10,         COM10_VSYNC_NEG | COM10_PCLK_FREE}, //Invert VSYNC and MASK PCLK
     {BDBASE,        0x7F},
     {DBSTEP,        0x03},
-    {AEW,           0x75},//75 DATASHEET 58 Stable Operating Region (Upper Limit)
-    {AEB,           0x64},//64 DATASHEET 48 Stable Operating Region (Lower Limit)
-    {LUMHTH,        0x80}, //Histogram AEC/AGC Luminance High Level Threshold
-    {LUMLTH,        0x60}, // Histogram AEC/AGC Luminance Low Level Threshold
+    {AEW,           0x75},
+    {AEB,           0x64},
     {VPT,           0xA1},
     {EXHCL,         0x00},
-    //{AWB_CTRL3,     0xAA},
-    //{AWB_CTRL1,     0x5c}, //added 50
+    {AWB_CTRL3,     0xAA},
+    {AWB_CTRL1,     0x5c}, //added 50
 
     //{COM8,          0xFF},
 
@@ -138,16 +123,10 @@ static const uint8_t default_regs[][2] = {
     //sign bit
     {SIGN_BIT,      0x06}, //default 0x06 brightness 0x0E
     {BRIGHTNESS,    0x18}, //0x08 +0, 0x38 Brightness +3
-    //contrast 
-    //** The contrast of OV7725 could be adjusted. Higher contrast will make the picture sharp. But the
-    //** side effect is loosing dynamic range.
     {CONTRAST,      0x20}, //0x30 original
     //saturation 
-    //** The color saturation of OV7725 could be adjusted. High color saturation would make the picture
-    //** looks more vivid, but the side effect is the bigger noise and not accurate skin color.
-    {USAT,          0x40}, //0x40 +0, 0x60 Saturation + 2
-    {VSAT,          0x40}, //0x40 +0, 0x60 Saturation + 2
-
+    {USAT,          0x50}, //0x40 +0, 0x60 Saturation + 2
+    {VSAT,          0x50}, //0x40 +0, 0x60 Saturation + 2
     {UVADJ0,        0x81},
     {SDE,           (SDE_CONT_BRIGHT_EN | SDE_SATURATION_EN)},
 
@@ -159,14 +138,12 @@ static const uint8_t default_regs[][2] = {
 
     // Lens Correction, should be tuned with real camera module
     {LC_RADI,       0x10},
-    {LC_COEF,       0x10},//G channel compensation coefficient when LC_CTR[2] (0x46) is 1
-    {LC_COEFB,      0x14},//B channel compensation coefficient when LC_CTR[2] (0x46) is 1
-    {LC_COEFR,      0x13},//R channel compensation coefficient when LC_CTR[2] (0x46) is 1
+    {LC_COEF,       0x10},
+    {LC_COEFB,      0x14},
+    {LC_COEFR,      0x17},
     {LC_CTR,        0x05},
     {COM5,          0x55}, // 0xf5 //0x65
-    /*night mode auto frame rate control*/
-    //{COM5,		0xf5},	 /*在夜视环境下，自动降低帧率，保证低照度画面质量*/
-    //{COM5,		0x31},	/*夜视环境帧率不变*/
+
 
 
     {0x00,          0x00},
@@ -282,32 +259,30 @@ static int set_framesize(sensor_t *sensor, framesize_t framesize)
     sensor->status.framesize = framesize;
 
     // Write MSBs
-    ret |= SCCB_Write(sensor->slv_addr, HOUTSIZE, w>>2);// 输出尺寸
-    ret |= SCCB_Write(sensor->slv_addr, VOUTSIZE, h>>1);// 输出尺寸
+    ret |= SCCB_Write(sensor->slv_addr, HOUTSIZE, w>>2);
+    ret |= SCCB_Write(sensor->slv_addr, VOUTSIZE, h>>1);
 
-    ret |= SCCB_Write(sensor->slv_addr, HSIZE, w>>2);// width高8位存在HSIZE,低2位存在HREF[1:0]
-    ret |= SCCB_Write(sensor->slv_addr, VSIZE, h>>1);// height高8位存在VSIZE,低1位存在HREF[2]
+    ret |= SCCB_Write(sensor->slv_addr, HSIZE, w>>2);
+    ret |= SCCB_Write(sensor->slv_addr, VSIZE, h>>1);
 
     // Write LSBs
     ret |= SCCB_Write(sensor->slv_addr, HREF, ((w&0x3) | ((h&0x1) << 2)));
 
     if (framesize == FRAMESIZE_QQVGA) {
         
-         // enable auto-scaling/zooming factors
-        ret |= SCCB_Write(sensor->slv_addr, DSPAUTO, 0xFF);
+         // Disable auto-scaling/zooming factors
+        ret |= SCCB_Write(sensor->slv_addr, DSPAUTO, 0xF3);
         // Clear auto-scaling/zooming factors
-        //ret |= SCCB_Write(sensor->slv_addr, SCAL0, 0x0a);
-        //ret |= SCCB_Write(sensor->slv_addr, SCAL1, 0x40);
-        //ret |= SCCB_Write(sensor->slv_addr, SCAL2, 0x40);
-        //ret |= SCCB_Write(sensor->slv_addr, VOUTSIZE, 120>>1);// 输出尺寸120
+        ret |= SCCB_Write(sensor->slv_addr, SCAL0, 0x0a);
+        ret |= SCCB_Write(sensor->slv_addr, SCAL1, 0x40);
+        ret |= SCCB_Write(sensor->slv_addr, SCAL2, 0x40);
 
-        ret |= SCCB_Write(sensor->slv_addr, HSTART, 0x3F);// 水平起始位置
-        ret |= SCCB_Write(sensor->slv_addr, VSTART, 0x03);// 垂直起始位置
+        ret |= SCCB_Write(sensor->slv_addr, HSTART, 0x3F);
+        ret |= SCCB_Write(sensor->slv_addr, VSTART, 0x03);
 
         ret |= SCCB_Write(sensor->slv_addr, COM7, reg | COM7_RES_QVGA);
 
-        ret |= SCCB_Write(sensor->slv_addr, CLKRC, 0x80 | 0x05);
-        ret |= SCCB_Write(sensor->slv_addr, COM4, 0x01 | 0x30 |0x80); /* bypass PLL (0x00:off, 0x40:4x, 0x80:6x, 0xC0:8x) */
+        ret |= SCCB_Write(sensor->slv_addr, CLKRC, 0x80 | 0x01);
 
 
     } else if (framesize < FRAMESIZE_VGA) {
