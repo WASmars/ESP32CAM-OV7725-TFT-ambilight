@@ -2,6 +2,10 @@
 
 ## this is only personal project, not really an expert in ESP32 and coding, the code is really messy and may have only little support from me.
 
+
+# latest update 
+- ***2023 Nov.***: update the LED location in the frame buffer calculation excel
+
 # ESP32-cam with OV7725, ili9341 320x240 TFT and WS2815 for ambilight
 
 in order to make the ambiligt with non app installed, currently Arduino base, no considering low power, as mentioned by @pierre-muth/OV7725_ESP32cam The OV7725 is a more sensitive sensor compare to the one usually found with the ESP32cam board (often the OV2640)  
@@ -13,7 +17,8 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
     - with RGB565, QVGA setting. single core can achieve 31FPS
     - main loop for pushing WS2815 data(each image data to LED strip cycle ~10ms) and checking IR signal on ESP32 core 1
     - core 0 handling full power for taking photo and merge RGB565 data for calculation (each cycle ~31ms)
-- the LED location data in the ***/include/strip_data.h***, modify it whenever needed
+- the LED location data in the ***/include/strip_data.h***, modify it whenever needed; 
+    - can try the calculation of mine by ***/Doc/buffer index_ TFT_xy calculation.xlsx***
 - LED light average with previous data, making smooth change over frame to frame, 3 update between frames
 - receive IR signal from ceilling light for activate the movie mode (dim ceilling light + turn on ambilight + strip light of TV deck), turn light off(for alignment of the camera image), and ESP32 sleep mode with turning off all light
 - in ESP32cam sleep mode still have 100mA consumption on 12V est it from
