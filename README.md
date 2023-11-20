@@ -1,10 +1,9 @@
 
 
-## this is only personal project, not really an expert in ESP32 and coding, the code is really messy and may have only little support from me.
-
-
-# latest update 
-- ***2023 Nov.***: update the LED location in the frame buffer calculation excel
+## this is only personal project, not really an expert in ESP32 and coding, the code is really messy 
+***if you got good setting on the OV7725 camera, please share for everyone as starting parameter***
+- latest update 
+	- ***2023 Nov.***: update the LED location in the frame buffer calculation excel
 
 # ESP32-cam with OV7725, ili9341 320x240 TFT and WS2815 for ambilight
 
@@ -21,12 +20,7 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
     - can try the calculation of mine by ***/Doc/buffer index_ TFT_xy calculation.xlsx***
 - LED light average with previous data, making smooth change over frame to frame, 3 update between frames
 - receive IR signal from ceilling light for activate the movie mode (dim ceilling light + turn on ambilight + strip light of TV deck), turn light off(for alignment of the camera image), and ESP32 sleep mode with turning off all light
-- in ESP32cam sleep mode still have 100mA consumption on 12V est it from, (not yet measure new wiring after 2023 Nov)
-	- LCD backlight typ 60mA in datasheet -> added switch in wiring to turn off the backlight when everything settled down
- 	- camera standby current 1mA? -> changed the power on state to idle, capture when IR signal
-  	- LDO 1117 3.3V <10mA
-  	- IR and RF module standby current
-  	- combined above with total est 90% of efficiency of 12V-5V DCDC
+
 - wake ESP32 cam sleep mode from ext0, activate wake up with IR receiver low signal on GPIO4, *still randomly wakeup in the long run*
 - RF433 remote control for controlling my RF controlled AC socket connecting to IKEA led strip powering
   - the @sui77/rc-switch arduino library is not fit my AC socket controller, there need a variable light contorl available library, is the @1technophile/NewRemoteSwitch
@@ -38,6 +32,13 @@ Turned off the AEC and AWB for the low light environment of my movie, gaming sen
 
 with my 65inch TV, need 45 LEDs on right/left side, and 84 LEDs on top/down side, total 258 LEDs by 60 LEDs/meter LED strip, power require ~40W(3.38 A/12V) [WLED calculator](https://wled-calculator.github.io/), however in my real measurement the current consumption is only ~2.5A, measure before adding fuses to the circuit.
 
+## things to be update
+- in ESP32cam sleep mode still have 100mA consumption on 12V est it from, (not yet measure new wiring after 2023 Nov)
+	- LCD backlight typ 60mA in datasheet -> added switch in wiring to turn off the backlight when everything settled down
+ 	- camera standby current 1mA? -> changed the power on state to idle, start capture when correct IR signal appears
+  	- LDO 1117 3.3V <10mA
+  	- IR and RF module standby current
+  	- combined above with total est 90% of efficiency of 12V-5V DCDC
 
 ## Required hardware
 
