@@ -14,17 +14,17 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
 ## Key takeaway of the projects
 
 - FPS around 31FPS
-    - with RGB565, QVGA setting. single core can achieve 31FPS
-    - main loop for pushing WS2815 data(each image data to LED strip cycle ~10ms) and checking IR signal on ESP32 core 1
-    - core 0 handling full power for taking photo and merge RGB565 data for calculation (each cycle ~31ms)
+    - with RGB565, QVGA setting. (can achieve 31FPS without any other tasks)
+    - *ESP32 core 1* main loop for pushing WS2815 data(each image data to LED strip cycle ~10ms) , 433Mhz Tx and IR signal 
+    - *ESP32 core 0* handling full power for taking photo and merge RGB565 data for calculation (each cycle ~31ms)
 - the LED location data in the ***/include/strip_data.h***, modify it whenever needed; 
     - can try the calculation of mine by ***/Doc/buffer index_ TFT_xy calculation.xlsx***
 - LED light average with previous data, making smooth change over frame to frame, 3 update between frames
 - receive IR signal from ceilling light for activate the movie mode (dim ceilling light + turn on ambilight + strip light of TV deck), turn light off(for alignment of the camera image), and ESP32 sleep mode with turning off all light
-- in ESP32cam sleep mode still have 100mA consumption on 12V est it from
-	- LCD backlight typ 60mA in datasheet
-	- LDO 1117 3.3V <10mA
- 	- camera standby current 1mA?
+- in ESP32cam sleep mode still have 100mA consumption on 12V est it from, (not yet measure new wiring after 2023 Nov)
+	- LCD backlight typ 60mA in datasheet -> added switch in wiring to turn off the backlight when everything settled down
+ 	- camera standby current 1mA? -> changed the power on state to idle, capture when IR signal
+  	- LDO 1117 3.3V <10mA
   	- IR and RF module standby current
   	- combined above with total est 90% of efficiency of 12V-5V DCDC
 - wake ESP32 cam sleep mode from ext0, activate wake up with IR receiver low signal on GPIO4, *still randomly wakeup in the long run*
@@ -74,6 +74,7 @@ with my 65inch TV, need 45 LEDs on right/left side, and 84 LEDs on top/down side
 | GPIO4     |to IR REMOTE RX INPUT|
 | GPIO16    | *PSRAM #CS pin used*|
 | GPIO0	    | *CAMERA used*|
+| GND(RST)  | to TFT Reset pin|
 
 
 - GPIO 0 is for the camera MCLK generation, connected to camera, ***which is not suitable for other application once you use camera***
