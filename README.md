@@ -12,6 +12,7 @@ well, in my case I don't need to covnet RGB565 to jpeg for streaming and no need
 
 ## Key takeaway of the projects
 
+- **when power on, camera is in idle**, need to modify the CAPTURE flag to activate at start, or receiving correct IR to activate
 - FPS around 31FPS
     - with RGB565, QVGA setting. (can achieve 31FPS without any other tasks)
     - *ESP32 core 1* main loop for pushing WS2815 data(each image data to LED strip cycle ~10ms) , 433Mhz Tx and IR signal 
