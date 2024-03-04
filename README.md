@@ -40,6 +40,7 @@ with my 65inch TV, need 45 LEDs on right/left side, and 84 LEDs on top/down side
   	- LDO 1117 3.3V <10mA
   	- IR and RF module standby current
   	- combined above with total est 90% of efficiency of 12V-5V DCDC
+  	- PS5 in high refresh rate will appear unstable light on top, ( camera capture issue from TV top to down) need other mod to deal with it
 
 ## Required hardware
 
@@ -62,7 +63,8 @@ with my 65inch TV, need 45 LEDs on right/left side, and 84 LEDs on top/down side
 ![image](https://github.com/WASmars/ESP32CAM-OV7725-TFT-ambilight/assets/54877239/b4005120-08e8-4fd3-9460-f5442fed4556)
 
 ![image](https://github.com/WASmars/ESP32CAM-OV7725-TFT-ambilight/assets/54877239/81f994aa-d62f-42ce-9175-9ab6ec777292)
-
+final result
+![IMG_20240229_215403372](https://github.com/WASmars/ESP32CAM-OV7725-TFT-ambilight/assets/54877239/24d3a670-6541-4eae-a6c0-350192524d82)
 
 |ESP32CAM pin| wiring to/from |
 |-----------|-------------|
@@ -87,6 +89,8 @@ with my 65inch TV, need 45 LEDs on right/left side, and 84 LEDs on top/down side
 - still missing one control pin for LCD backlight, GPIO33 is the candidate but it will need solder fix wire for another circuit/ or jumping unused 3.3v/5v pin for GPIO33 connection
   
 ## Actual performance of the ambilight
+[![recording by smarphone](https://img.youtube.com/vi/F_Fukdiy_EA/0.jpg)](https://www.youtube.com/watch?v=F_Fukdiy_EA)
+
 ### calibrating the strip location from the image  
 ![image](/image/IMG_20230620_210950448_HDR.jpg)
 
