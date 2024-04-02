@@ -89,6 +89,7 @@ final result
 - still missing one control pin for LCD backlight, GPIO33 is the candidate but it will need solder fix wire for another circuit/ or jumping unused 3.3v/5v pin for GPIO33 connection
   
 ## Actual performance of the ambilight
+click the image for youtube link check the performance by video~
 [![youtube video recorded by smartphone](https://img.youtube.com/vi/F_Fukdiy_EA/0.jpg)](https://www.youtube.com/watch?v=F_Fukdiy_EA)
 
 ### calibrating the strip location from the image  
