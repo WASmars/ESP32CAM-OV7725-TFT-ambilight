@@ -35,12 +35,12 @@ with my 65inch TV, need 45 LEDs on right/left side, and 84 LEDs on top/down side
 
 ## things to be update
 - in ESP32cam sleep mode still have 100mA consumption on 12V est it from, (not yet measure new wiring after 2023 Nov)
-	- LCD backlight typ 60mA in datasheet -> added switch in wiring to turn off the backlight when everything settled down
- 	- camera standby current 1mA? -> changed the power on state to idle, start capture when correct IR signal appears
+	- ~~LCD backlight typ 60mA in datasheet~~ -> added switch in wiring to turn off the backlight when everything settled down
+ 	- ~~camera standby current 1mA?~~ -> changed the power on state to idle, start capture when correct IR signal appears
   	- LDO 1117 3.3V <10mA
   	- IR and RF module standby current
-  	- combined above with total est 90% of efficiency of 12V-5V DCDC
-  	- PS5 in high refresh rate will appear unstable light on top, ( camera capture issue from TV top to down) need other mod to deal with it
+	- combined above with total est 90% of efficiency of 12V-5V DCDC
+- PS5 in high refresh rate will appear unstable light on top, ( camera capture issue from TV top to down) need other mod to deal with it
 
 ## Required hardware
 
