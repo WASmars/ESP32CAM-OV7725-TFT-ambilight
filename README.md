@@ -1,6 +1,6 @@
 
 
-## NOTICE: this is only personal project, not an expert in ESP32 and coding.
+## NOTICE: this is only personal project, you can left message for questions or advise. I am not expert in ESP32 and coding would take time to respond.
 ***if you got good setting on the OV7725 camera, please share for everyone as starting parameter***
 - latest update 
 	- ***2023 Nov.***: update the LED location in the frame buffer calculation excel
