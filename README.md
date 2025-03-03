@@ -4,6 +4,18 @@
 ***if you got good setting on the OV7725 camera, please share for everyone as starting parameter***
 - latest update 
 	- ***2023 Nov.***: update the LED location in the frame buffer calculation excel
+        - **2025 Feb.** done the rewrite the code for ESP32, solved the PS5 flickering, and calculation of fish-eye location for TV.
+        - ***2025 Feb.***: after the survey of the ESP32  camera support, the official document has noted the ESP32 PCLK for camera can only support upto 8 Mhz, which in usual board can run in 10 Mhz with no issue. => calculate the clock and datasheet info the MAX FPS in 10MHz is 31.225 FPS, which matches my implement of the project. however with higher frequency of PCLK, ESP32 would not able to catch the pixel data correctly.
+        - **DECIDED**, transfer the board to ESP32 S3, which support PCLK upto 40 MHz, should be very sufficient for targeting 60 FPS capturing, could able to higher since the OV7725 support max 48 MHz, maybe able to get 120Hz QVGA output.
+        - **Will archive this and start new fork**, after the ESP32 S3 board is arrived the tested. 
+	- **New fork plan to adopt following** 
+		- *not yet start* NewRemoteSwitch to rc-switch with custom code
+		- *migrating*, VS code, platformIO based, with library esp-camera. will get clean repository
+		- *ongoing in test code*, brush-up 2 core operation
+		- *done in test code*, update senser setup within setup menu without editing on original ov7725.c, for clear understanding
+		- *done in test code*, change base image from QVGA to QQVGA, for LED strip RGB data, and save process image data size
+		- *done in test code*, change image buffer to array, easier access through standard thinking
+  		- *concept*, wire GPIO 33 to selective VCC pin on ESP32 for relay control. Which can cut the power OFF current consumption of LED strip
 
 # ESP32-cam with OV7725, ili9341 320x240 TFT and WS2815 for ambilight
 
